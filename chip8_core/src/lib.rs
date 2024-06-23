@@ -70,7 +70,18 @@ impl Emu {
         let end = (START_ADDR as usize) + data.len();
         self.ram[start..end].copy_from_slice(data);
     }
+    pub fn tick_timers(&mut self) {
+        if self.dt > 0 {
+            self.dt -= 1;
+        }
 
+        if self.st > 0 {
+            if self.st == 1 {
+                // BEEP
+            }
+            self.st -= 1;
+        }
+    }
     pub fn reset(&mut self) {
         self.pc = START_ADDR;
         self.ram = [0; RAM_SIZE];
@@ -131,7 +142,12 @@ impl Emu {
                 let nnn = op & 0xFFF;
                 self.pc = nnn;
             }
-
+            //call nnn
+            (2, _, _, _) => {
+                let nnn = op & 0xFFF;
+                self.push(self.pc);
+                self.pc = nnn;
+            }
             // skip V[X] == NN
             (3, _, _, _) => {
                 let x = digit2 as usize;
