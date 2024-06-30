@@ -21,7 +21,8 @@ jobs:
 
       - name: Set up Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-
+      - name: Install SDL2
+        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev
       - name: Test project
         run: cargo test --all-features
         working-directory: ${{ matrix.project-directory }}
