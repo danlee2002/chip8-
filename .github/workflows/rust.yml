@@ -17,30 +17,15 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set up Rust environment
-        uses: actions-rs/toolchain@v2
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache cargo registry
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ matrix.project-directory }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
+      - name: Test project
+        run: cargo test --all-features
+        working-directory: ${{ matrix.project-directory }}
 
       - name: Build project
         run: cargo build --release
         working-directory: ${{ matrix.project-directory }}
-
-      - name: Run tests
-        run: cargo test
-        working-directory: ${{ matrix.project-directory }}
-
