@@ -1,0 +1,32 @@
+name: Rust
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        project-directory: ['desktop', 'chip8_core']
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install SDL2
+        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev
+      - name: Test project
+        run: cargo test --all-features
+        working-directory: ${{ matrix.project-directory }}
+
+      - name: Build project
+        run: cargo build --release
+        working-directory: ${{ matrix.project-directory }}
