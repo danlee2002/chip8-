@@ -1,5 +1,4 @@
 use rand::Rng;
-
 pub const SCREEN_WIDTH: usize = 64;
 pub const SCREEN_HEIGHT: usize = 32;
 
@@ -28,6 +27,7 @@ const FONTSET: [u8; FONTSET_SIZE] = [
     0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 ];
 
+#[derive(Debug)]
 pub struct Emu {
     pc: u16,
     ram: [u8; RAM_SIZE],
@@ -135,15 +135,15 @@ impl Emu {
             // CLS
             (0, 0, 0xE, 0) => {
                 self.screen = [false; SCREEN_WIDTH * SCREEN_HEIGHT];
-            },
+            }
             // RET
-            (0, 0, 0xE, 0xE) => self.ret(),
+            (0, 0, 0xE, 0xE) => self.reg(),
             // JMP NNN
             (1, _, _, _) => self.jmp_nnn(op),
             // CALL NNN
             (2, _, _, _) => self.call_nnn(op),
             // SKIP V[X] == NN
-            (3, _, _, _) => self.skip_vx_eqnn(op,digit2),
+            (3, _, _, _) => self.skip_vx_eqnn(op, digit2),
             // SKIP V[X] != NN
             (4, _, _, _) => self.skip_vx_neqenn(op, digit2),
             // SKIP V[X] == V[Y]
@@ -197,7 +197,7 @@ impl Emu {
             // I = FONT
             (0xF, _, 2, 9) => self.i_eq_font(digit2),
             // BCD
-            (0xF, _, 3, 3) => self.bcd(digit2), 
+            (0xF, _, 3, 3) => self.bcd(digit2),
             // STORE V[0] - V[X]
             (0xF, _, 5, 5) => self.store_v0_vx(digit2),
             // LOAD V[0] - V[X]
@@ -210,13 +210,12 @@ impl Emu {
     fn ret(&mut self) {
         let ret_addr = self.pop();
         self.pc = ret_addr;
-
     }
 
     fn jmp_nnn(&mut self, op: u16) {
         self.pc = op & 0xFFF;
     }
-    
+
     fn call_nnn(&mut self, op: u16) {
         let nnn = op & 0xFFF;
         self.push(self.pc);
@@ -226,11 +225,11 @@ impl Emu {
     fn skip_vx_eqnn(&mut self, op: u16, x: u16) {
         let nn = (op & 0xFF) as u8;
         if self.v_reg[x as usize] == nn {
-           self.pc += 2;
+            self.pc += 2;
         }
     }
 
-    fn skip_vx_neqenn(&mut self, op: u16, x: u16){
+    fn skip_vx_neqenn(&mut self, op: u16, x: u16) {
         let nn = (op & 0xFF) as u8;
         if self.v_reg[x as usize] != nn {
             self.pc += 2;
@@ -239,11 +238,11 @@ impl Emu {
 
     fn skip_vx_eqvy(&mut self, x: u16, y: u16) {
         if self.v_reg[x as usize] == self.v_reg[y as usize] {
-        self.pc += 2;
+            self.pc += 2;
         }
     }
 
-    fn vx_eqnn(&mut self,op: u16, x: u16) {
+    fn vx_eqnn(&mut self, op: u16, x: u16) {
         let nn = (op & 0xFF) as u8;
         self.v_reg[x as usize] = nn;
     }
@@ -253,11 +252,11 @@ impl Emu {
         self.v_reg[x as usize] = self.v_reg[x as usize].wrapping_add(nn);
     }
 
-    fn vx_eq_vy(&mut self, x: u16, y:u16) {
+    fn vx_eq_vy(&mut self, x: u16, y: u16) {
         self.v_reg[x as usize] = self.v_reg[y as usize];
     }
-  
-    fn vx_or_vy(&mut self, x: u16, y: u16){
+
+    fn vx_or_vy(&mut self, x: u16, y: u16) {
         self.v_reg[x as usize] |= self.v_reg[y as usize];
     }
 
@@ -268,12 +267,11 @@ impl Emu {
     fn vx_xor_vy(&mut self, x: u16, y: u16) {
         self.v_reg[x as usize] ^= self.v_reg[y as usize];
     }
-    fn vx_plus_eqvy(&mut self, x:u16, y:u16){
+    fn vx_plus_eqvy(&mut self, x: u16, y: u16) {
         let (new_vx, carry) = self.v_reg[x as usize].overflowing_add(self.v_reg[y as usize]);
         let new_vf = if carry { 1 } else { 0 };
         self.v_reg[x as usize] = new_vx;
         self.v_reg[0xF] = new_vf;
-
     }
 
     fn vx_minus_eqvy(&mut self, x: u16, y: u16) {
@@ -287,7 +285,7 @@ impl Emu {
         let lsb = self.v_reg[x as usize] & 1;
         self.v_reg[x as usize] >>= 1;
         self.v_reg[0xF] = lsb;
-    } 
+    }
 
     fn vx_eqvy_minusvx(&mut self, x: u16, y: u16) {
         let (new_vx, borrow) = self.v_reg[y as usize].overflowing_sub(self.v_reg[x as usize]);
@@ -322,7 +320,6 @@ impl Emu {
         let nn = (op & 0xFF) as u8;
         let rng: u8 = rand::thread_rng().gen();
         self.v_reg[x as usize] = rng & nn;
-
     }
 
     fn draw(&mut self, x: u16, y: u16, rows: u16) {
@@ -350,7 +347,6 @@ impl Emu {
         } else {
             self.v_reg[0xF] = 0;
         }
-
     }
 
     fn skip_keypress(&mut self, x: u16) {
@@ -373,22 +369,21 @@ impl Emu {
         self.v_reg[x as usize] = self.dt;
     }
 
-
     fn wait(&mut self, x: u16) {
-                let mut pressed = false;
-                for i in 0..self.keys.len() {
-                    if self.keys[i] {
-                        self.v_reg[x as usize] = i as u8;
-                        pressed = true;
-                        break;
-                    }
-                }
-                if !pressed {
-                    self.pc -= 2;
-                }
+        let mut pressed = false;
+        for i in 0..self.keys.len() {
+            if self.keys[i] {
+                self.v_reg[x as usize] = i as u8;
+                pressed = true;
+                break;
+            }
+        }
+        if !pressed {
+            self.pc -= 2;
+        }
     }
 
-    fn delaytimer_eq_vx(&mut self, x: u16){
+    fn delaytimer_eq_vx(&mut self, x: u16) {
         self.dt = self.v_reg[x as usize];
     }
 
@@ -396,7 +391,7 @@ impl Emu {
         self.st = self.v_reg[x as usize];
     }
 
-    fn instruction_plus_eq_vx(&mut self, x: u16){
+    fn instruction_plus_eq_vx(&mut self, x: u16) {
         let vx = self.v_reg[x as usize] as u16;
         self.i_reg = self.i_reg.wrapping_add(vx);
     }
@@ -426,10 +421,96 @@ impl Emu {
 
     fn ld_v0_vx(&mut self, x: u16) {
         let x = x as usize;
-                let i = self.i_reg as usize;
-                for idx in 0..=x {
-                    self.v_reg[idx] = self.ram[i + idx];
+        let i = self.i_reg as usize;
+        for idx in 0..=x {
+            self.v_reg[idx] = self.ram[i + idx];
+        }
+    }
+    #[cfg(test)]
+    pub fn get_pc(&mut self) -> u16 {
+        self.pc
+    }
+    #[cfg(test)]
+    pub fn get_ram(&mut self) -> &[u8] {
+        &self.ram
+    }
+    #[cfg(test)]
+    pub fn get_v_reg(&mut self) -> &[u8] {
+        &self.v_reg
+    }
+    #[cfg(test)]
+    pub fn get_i_reg(&mut self) -> u16 {
+        self.i_reg
+    }
+    #[cfg(test)]
+    pub fn get_sp(&mut self) -> u16 {
+        self.sp
+    }
+    #[cfg(test)]
+    pub fn get_stack(&mut self) -> &[u16] {
+        &self.stack
+    }
+    #[cfg(test)]
+    pub fn get_keys(&mut self) -> &[bool] {
+        &self.keys
+    }
+    #[cfg(test)]
+    pub fn get_dt(&mut self) -> u8 {
+        self.dt
+    }
+
+    #[cfg(test)]
+    pub fn get_st(&mut self) -> u8 {
+        self.st
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    // tests initalization
+    #[test]
+    fn test_initialization() {
+        let mut emu = Emu::new();
+        let mut true_ram = [0; 4096];
+        true_ram[..FONTSET_SIZE].copy_from_slice(&FONTSET);
+        assert_eq!(emu.get_pc(), 0x200);
+        assert_eq!(emu.get_ram(), true_ram);
+        assert_eq!(emu.get_v_reg(), [0; 16]);
+        assert_eq!(emu.get_i_reg(), 0);
+        assert_eq!(emu.get_sp(), 0);
+        assert_eq!(emu.get_stack(), [0; 16]);
+        assert_eq!(emu.get_keys(), [false; 16]);
+        assert_eq!(emu.get_dt(), 0);
+        assert_eq!(emu.get_st(), 0);
+    }
+
+    // test pushing onto stack counter
+    #[test]
+    fn test_push() {
+        let mut emu = Emu::new();
+        let mut expected = [0; 16];
+        for i in 0..16 {
+            emu.push(i);
+            expected[i as usize] = i as u16;
+            assert_eq!(emu.get_sp(), i + 1);
+            assert_eq!(emu.get_stack(), expected);
         }
     }
 
+    //tests sp
+    #[test]
+    fn test_pop() {
+        let mut emu = Emu::new();
+        let mut expected = [0; 16];
+        for i in 0..16 {
+            emu.push(i);
+            expected[i as usize] = i as u16;
+        }
+        for i in (0..16).rev() {
+            let val = emu.pop();
+            assert_eq!(val, i);
+            assert_eq!(emu.get_sp(), i);
+        }
+    }
 }
