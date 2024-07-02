@@ -133,10 +133,7 @@ impl Emu {
             // NOP
             (0, 0, 0, 0) => return,
             // CLS
-            (0, 0, 0xE, 0) => {
-                self.screen = [false; SCREEN_WIDTH * SCREEN_HEIGHT];
-            }
-            // RET
+            (0, 0, 0xE, 0) => self.clear_screen(), // RET
             (0, 0, 0xE, 0xE) => self.ret(),
             // JMP NNN
             (1, _, _, _) => self.jmp_nnn(op),
@@ -207,6 +204,9 @@ impl Emu {
     }
 
     // functions for opcodes
+    fn clear_screen(&mut self) {
+        self.screen = [false; SCREEN_WIDTH * SCREEN_HEIGHT];
+    }
     fn ret(&mut self) {
         let ret_addr = self.pop();
         self.pc = ret_addr;
@@ -467,6 +467,7 @@ impl Emu {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
     // tests initalization
     #[test]
@@ -485,7 +486,6 @@ mod tests {
         assert_eq!(emu.get_st(), 0);
     }
 
-    // test pushing onto stack counter
     #[test]
     fn test_push() {
         let mut emu = Emu::new();
@@ -498,7 +498,6 @@ mod tests {
         }
     }
 
-    //tests sp
     #[test]
     fn test_pop() {
         let mut emu = Emu::new();
@@ -512,5 +511,86 @@ mod tests {
             assert_eq!(val, i);
             assert_eq!(emu.get_sp(), i);
         }
+    }
+
+    #[test]
+    fn test_jmp_nnn() {
+        let mut emu = Emu::new();
+        emu.jmp_nnn(0xFFF);
+        assert_eq!(emu.get_pc(), 0xFFF)
+    }
+    #[test]
+    fn test_call_nnn() {
+        let mut emu = Emu::new();
+        emu.call_nnn(0xFFF);
+        assert_eq!(emu.get_pc(), 0xFFF);
+        assert_eq!(emu.get_sp(), 1);
+        assert_eq!(emu.get_stack()[0], 0x200);
+    }
+    #[test]
+    fn test_skip_vx_eqnn() {
+        let mut emu = Emu::new();
+        emu.vx_eqnn(0x60FF, 0);
+        emu.skip_vx_eqnn(0x30FF, 0);
+        assert_eq!(emu.get_pc(), 0x202);
+    }
+    #[test]
+    fn test_skip_vx_neqnn() {
+        let mut emu = Emu::new();
+        emu.vx_eqnn(0x60FF, 0);
+        emu.skip_vx_neqenn(0x30FA, 0);
+        assert_eq!(emu.get_pc(), 0x202);
+    }
+    #[test]
+    fn test_skip_vx_eqvy() {
+        let mut emu = Emu::new();
+        emu.vx_eqnn(0x60FF, 0);
+        emu.vx_eqnn(0x60FF, 1);
+        emu.skip_vx_eqvy(0, 1);
+        assert_eq!(emu.get_pc(), 0x202);
+    }
+    #[test]
+    fn test_vx_eqnn() {
+        let mut emu = Emu::new();
+        emu.vx_eqnn(0x60FF, 0);
+        assert_eq!(emu.get_v_reg()[0], 0xFF);
+    }
+    #[test]
+    fn test_vx_plusnn() {
+        let mut emu = Emu::new();
+        emu.vx_eqnn(0x70FF, 0);
+        assert_eq!(emu.get_v_reg()[0], 0xFF);
+    }
+    #[test]
+    fn test_vx_eq_vy() {
+        let mut emu = Emu::new();
+        emu.vx_eqnn(0x60FF, 1);
+        emu.vx_eq_vy(0, 1);
+        let v_reg = emu.get_v_reg();
+        assert_eq!(v_reg[0], v_reg[1]);
+    }
+    #[test]
+    fn test_vx_or_vy() {
+        let mut emu = Emu::new();
+        emu.vx_eqnn(0x60FF, 1);
+        emu.vx_or_vy(0, 1);
+        let v_reg = emu.get_v_reg();
+        assert_eq!(v_reg[0], v_reg[1]);
+    }
+    #[test]
+    fn test_vx_and_vy() {
+        let mut emu = Emu::new();
+        emu.vx_eqnn(0x60FF, 1);
+        emu.vx_and_vy(0, 1);
+        let v_reg = emu.get_v_reg();
+        assert_eq!(v_reg[0], 0);
+    }
+    #[test]
+    fn test_vx_xor_vy() {
+        let mut emu = Emu::new();
+        emu.vx_eqnn(0x60FF, 1);
+        emu.vx_xor_vy(0, 1);
+        let v_reg = emu.get_v_reg();
+        assert_eq!(v_reg[0], 0xFF);
     }
 }
