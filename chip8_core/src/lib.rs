@@ -137,7 +137,7 @@ impl Emu {
                 self.screen = [false; SCREEN_WIDTH * SCREEN_HEIGHT];
             }
             // RET
-            (0, 0, 0xE, 0xE) => self.reg(),
+            (0, 0, 0xE, 0xE) => self.ret(),
             // JMP NNN
             (1, _, _, _) => self.jmp_nnn(op),
             // CALL NNN
