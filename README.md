@@ -1,5 +1,5 @@
 The following project is an implementation of an interpreter for the chip8 programming language in Rust.
-The primary purpose behind this language was to allow users to load and use ROM programs for the CHIP8 ISA.
+The primary purpose behind this language was to allow users to load and use ROM programs for the CHIP8 language.
 Before building this project, one should ensure they have Rust installed. 
 Moreover also ensure they have sdl2 installed. 
 To install sdl2. 
